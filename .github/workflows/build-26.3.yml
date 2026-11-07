@@ -1,0 +1,60 @@
+# Builds the Minecraft 26.3 (Fabric) jar of this unofficial port.
+# Perspective API 1.5.0-beta for 26.3 is not published on a Maven repository, so the
+# matching backport (Hiveko75/Perspective-API, branch port-26.3) is built and installed
+# into Maven Local first. Only the needed Stonecutter versions are configured (trimmed in
+# the runner's checkout); the source in the repository is unchanged.
+name: Build 26.3 (Fabric)
+
+on:
+  push:
+    branches: [port-26.3]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check out Perspective API 26.3 backport
+        uses: actions/checkout@v4
+        with:
+          repository: Hiveko75/Perspective-API
+          ref: port-26.3
+          path: .perspective-api
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Install Perspective API (26.3 Fabric) into Maven Local
+        working-directory: .perspective-api
+        run: |
+          perl -0pi -e 's/^[ \t]*mc\(".*\n//mg; s/^([ \t]*)vcsVersion/$1mc("26.3", "fabric")\n\n$1vcsVersion/m' settings.gradle.kts
+          chmod +x ./gradlew
+          ./gradlew :26.3-fabric:publishToMavenLocal --stacktrace
+
+      - name: Configure only Minecraft 26.2 + 26.3 (Fabric)
+        run: |
+          perl -0pi -e 's/^[ \t]*mc\(".*\n//mg; s/^([ \t]*)vcsVersion/$1mc("26.2", "fabric")\n$1mc("26.3", "fabric")\n\n$1vcsVersion/m' settings.gradle.kts
+          grep -n 'mc("' settings.gradle.kts
+
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :26.3-fabric:assemble --stacktrace
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: third-person-26.3-fabric
+          path: versions/26.3-fabric/build/libs/*.jar
