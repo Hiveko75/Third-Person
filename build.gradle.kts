@@ -139,6 +139,19 @@ stonecutter {
 }
 
 // region Dependencies
+repositories {
+    mavenLocal {
+        content { includeGroup("io.github.leawind.perspectiveapi") }
+    }
+}
+
+// NeoForm runtime 2.0.18 (ModDevGradle default) cannot recompile the patched 26.3 sources.
+if (isNeoforge && stonecutter.current.parsed >= "26.3") {
+    extensions.configure<net.neoforged.nfrtgradle.NeoFormRuntimeExtension>("neoFormRuntime") {
+        version.set("2.0.31")
+    }
+}
+
 // Forge's transitive `net.minecraftforge:unsafe` dependency uses the dynamic version `2.11.+`.
 if (isForge || (isNeoforge && stonecutter.current.parsed < "1.21")) {
     configurations.configureEach {
@@ -151,7 +164,12 @@ if (isForge || (isNeoforge && stonecutter.current.parsed < "1.21")) {
 
 dependencies {
     // Perspective API (required)
-    modstitchModImplementation("maven.modrinth:LIqveQm1:$perspectiveApiVersion+${loader}-$mcVersion")
+    if (stonecutter.current.parsed >= "26.3") {
+        // Not on Modrinth yet: use the locally built 26.3 backport published to Maven Local.
+        modstitchModImplementation("io.github.leawind.perspectiveapi:perspective_api:$perspectiveApiVersion+${loader}-$mcVersion")
+    } else {
+        modstitchModImplementation("maven.modrinth:LIqveQm1:$perspectiveApiVersion+${loader}-$mcVersion")
+    }
 
     // Sable Companion is embedded by Sable itself. Its 1.21.1 artifact cannot be bundled into
     // variants that still support Minecraft 1.21, so only compile against its optional API.
