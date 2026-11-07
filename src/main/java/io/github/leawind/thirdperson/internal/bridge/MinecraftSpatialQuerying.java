@@ -169,6 +169,9 @@ public final class MinecraftSpatialQuerying {
             net.minecraft.world.entity.EntitySelector.CAN_BE_PICKED,
             (float) hitboxMargin,
             ClipContext.Block.OUTLINE,
+            /*? if >=26.3 {*/
+            /*true,
+            *//*?}*/
             true)) {
       Vec3 worldLocation = SpatialQueryHitLocation.resolve(player.level(), candidate);
       entityHits.add(new SpatialHit(candidate, worldLocation));
